@@ -1,0 +1,130 @@
+[project]
+name = "blossomtune_mlx"
+version = "1.0.0"
+description = "BlossomTune LLM"
+license = "Apache-2.0"
+dependencies = [
+    "flwr[simulation]>=1.19.0",
+    "flwr-datasets>=0.5.0",
+    "omegaconf==2.3.0",
+    "hf_transfer==0.1.9",
+    "python-slugify>=8.0.4",
+    "jinja2>=3.1.6",
+    "mlx-llm[train]>=1.0.9",
+    "ray>=2.31.0",
+    "mlx-lm>=0.26.3",
+]
+requires-python = ">=3.11.12"
+
+[tool.ruff.lint]
+
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+select = ["E4", "E7", "E9", "F"]
+ignore = []
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+
+# Double quotes for strings.
+quote-style = "double"
+
+# Iindent with spaces.
+indent-style = "space"
+
+# Respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Automatically detect line ending.
+line-ending = "auto"
+
+# Disable auto-formatting of code examples in docstrings.
+docstring-code-format = false
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+#
+# This only has an effect when the `docstring-code-format` setting is
+# enabled.
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"  # Accepts: "google", "numpy", or "pep257".
+
+[tool.flwr.app]
+publisher = "mrs83"
+
+[tool.flwr.app.components]
+serverapp = "blossomtune_mlx.server_app:app"
+clientapp = "blossomtune_mlx.client_app:app"
+
+[tool.flwr.app.config]
+# --- Model Configuration ---
+model.name = "mlx-community/SmolLM-135M-Instruct-4bit"
+
+# --- Training Configuration ---
+train.save_every_round = 5
+train.learning_rate_max = 1e-4
+train.learning_rate_min = 1e-6
+train.seq_length = 256
+train.lora_layers = 4 # Number of layers to apply LoRA to
+train.lora_config = {rank=4, alpha=8, dropout=0.2, scale=10.0}
+train.fine_tune_type = "dora"
+
+# These arguments map to mlx_lm.tuner.TrainingArgs
+train.training_arguments.per_device_train_batch_size = 1
+train.training_arguments.max_steps = 10 # Iterations per client per round
+train.training_arguments.gradient_checkpointing = true
+
+# --- Strategy Configuration ---
+strategy.min_fit_clients = 1
+strategy.min_available_clients = 1
+strategy.fraction_fit = 0.2
+strategy.fraction_evaluate = 0.0 # Evaluation is not implemented yet
+
+# --- Federated Run Configuration ---
+num_server_rounds = 10
+data_path = "./data" # Base directory for client datasets
+save_path = "./results"                # Server-side directory for saving global models
+
+# --- Dataset Configuration ---
+dataset.name = "flwrlabs/alpaca-gpt4"
+dataset.prompt_template = "{% if instruction %}{{ instruction }} {% endif %}{{ input }}"
+dataset.completion_template = "{{output}}"
+
+num-server-rounds = 10
+
+[tool.flwr.federations]
+default = "local-simulation"
+
+[tool.flwr.federations.local-deployment]
+address = "0.0.0.0:9093"
+insecure = true
+
+[tool.flwr.federations.local-simulation]
+options.num-supernodes = 10
+options.backend.client-resources.num-cpus = 4
+options.backend.client-resources.num-gpus = 0 # MLX uses the Neural Engine / GPU via unified memory
+
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = "."
+addopts = [
+    "--import-mode=importlib",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "build"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["blossomtune_mlx"]
+exclude = ["results", "data"]
