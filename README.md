@@ -43,7 +43,7 @@ First, clone the repository and install the dependencies:
 
 ```
 git clone https://github.com/ethicalabs-ai/BlossomTuneLLM-MLX.git
-cd blossomtune-mlx
+cd BlossomTuneLLM-MLX
 ```
 
 #### Install dependencies using uv (recommended)
