@@ -1,7 +1,39 @@
 import mlx.core as mx
 import numpy as np
+
+from pathlib import Path
+from omegaconf import DictConfig, OmegaConf
 from flwr.common.typing import NDArrays
+
 from mlx.utils import tree_flatten, tree_unflatten
+from mlx_lm.tuner import TrainingArgs
+
+
+def get_training_args(train_cfg: DictConfig, adapter_file: Path) -> TrainingArgs:
+    return TrainingArgs(
+        batch_size=train_cfg.training_arguments.per_device_train_batch_size,
+        iters=train_cfg.training_arguments.max_steps,
+        steps_per_report=1,
+        grad_checkpoint=train_cfg.training_arguments.get(
+            "gradient_checkpointing", False
+        ),
+        max_seq_length=train_cfg.get("seq_length", 2048),
+        # mlx-lm trainer saves the adapter by default. we have to provide a path.
+        adapter_file=str(adapter_file),
+    )
+
+
+def get_peft_config(
+    model_cfg: DictConfig, train_cfg: DictConfig, adapter_path: Path
+) -> dict:
+    return {
+        "model": model_cfg.name,
+        "adapter_path": str(adapter_path),
+        "num_layers": train_cfg.lora_layers,
+        "fine_tune_type": train_cfg.fine_tune_type,
+        "lora_parameters": OmegaConf.to_container(train_cfg.lora_config, resolve=True),
+        "lora_layers": train_cfg.lora_layers,
+    }
 
 
 def get_parameters(model) -> NDArrays:

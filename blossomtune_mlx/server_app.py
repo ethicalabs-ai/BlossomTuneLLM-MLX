@@ -12,8 +12,8 @@ from flwr.server import ServerApp, ServerAppComponents, ServerConfig
 
 from blossomtune_mlx.config import get_run_config
 from blossomtune_mlx.strategy import FlowerTuneLlm
-from blossomtune_mlx.models import get_parameters, set_parameters
-from mlx_lm.utils import load
+from blossomtune_mlx.models import get_parameters, set_parameters, get_peft_config
+from mlx_lm.utils import load, save_config
 
 
 def get_evaluate_fn(
@@ -64,7 +64,9 @@ def get_evaluate_fn(
 
             # 5. Use the model's own method to save the trainable parameters (the adapter).
             model.save_weights(str(adapter_file))
-            print(f"Global adapter saved to {adapter_file}")
+            peft_config = get_peft_config(model_cfg, train_cfg, adapter_file)
+            save_config(peft_config, (adapter_file.parent / "adapter_config.json"))
+            print(f"Global adapter and config saved to {adapter_file.parent}")
 
         # No actual evaluation is performed, so return a dummy loss.
         return 0.0, {}

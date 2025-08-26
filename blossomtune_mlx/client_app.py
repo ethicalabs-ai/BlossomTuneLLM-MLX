@@ -13,7 +13,7 @@ from flwr.common import Context
 from flwr.common.typing import NDArrays, Scalar
 from omegaconf import DictConfig, OmegaConf
 from mlx_lm import load
-from mlx_lm.tuner import train, TrainingArgs
+from mlx_lm.tuner import train
 from mlx_lm.tuner.utils import linear_to_lora_layers
 from mlx_lm.tuner.trainer import TrainingCallback
 from mlx_lm.tuner.datasets import CacheDataset, create_dataset
@@ -21,7 +21,7 @@ from transformers import PreTrainedTokenizer
 
 from blossomtune_mlx.config import get_run_config
 from blossomtune_mlx.dataset import load_data
-from blossomtune_mlx.models import get_parameters, set_parameters
+from blossomtune_mlx.models import get_parameters, set_parameters, get_training_args
 
 
 # Suppress warnings
@@ -156,17 +156,7 @@ class MLXClient(NumPyClient):
 
         # Define training arguments for the `mlx_lm.tuner.train` function
         # Note: `learning_rate` is NOT an argument here.
-        training_args = TrainingArgs(
-            batch_size=self.train_cfg.training_arguments.per_device_train_batch_size,
-            iters=self.train_cfg.training_arguments.max_steps,
-            steps_per_report=10,
-            grad_checkpoint=self.train_cfg.training_arguments.get(
-                "gradient_checkpointing", False
-            ),
-            max_seq_length=self.train_cfg.get("seq_length", 2048),
-            # mlx-lm trainer saves the adapter by default. we have to provide a path.
-            adapter_file=adapter_file,
-        )
+        training_args = get_training_args(self.train_cfg, str(adapter_file))
 
         # Load the dataset using the tuner's utility
         dataset_config = {
