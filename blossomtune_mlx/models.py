@@ -31,7 +31,9 @@ def get_peft_config(
         "adapter_path": str(adapter_path),
         "num_layers": train_cfg.lora_layers,
         "fine_tune_type": train_cfg.fine_tune_type,
-        "lora_parameters": OmegaConf.to_container(train_cfg.lora_config, resolve=True),
+        "lora_parameters": OmegaConf.to_container(
+            train_cfg.lora_parameters, resolve=True
+        ),
         "lora_layers": train_cfg.lora_layers,
     }
 

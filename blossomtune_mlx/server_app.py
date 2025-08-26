@@ -44,13 +44,13 @@ def get_evaluate_fn(
 
             # 2. Configure the model for LoRA to create the adapter layers.
             model.freeze()
-            lora_config_dict = OmegaConf.to_container(
-                train_cfg.lora_config, resolve=True
+            lora_parameters_dict = OmegaConf.to_container(
+                train_cfg.lora_parameters, resolve=True
             )
             linear_to_lora_layers(
                 model,
                 train_cfg.lora_layers,
-                lora_config_dict,
+                lora_parameters_dict,
                 use_dora=(train_cfg.fine_tune_type == "dora"),
             )
 
@@ -115,7 +115,9 @@ def server_fn(context: Context) -> ServerAppComponents:
 
     # 2. Configure the model for LoRA to create the adapter layers.
     init_model.freeze()
-    lora_parameters_dict = OmegaConf.to_container(cfg.train.lora_config, resolve=True)
+    lora_parameters_dict = OmegaConf.to_container(
+        cfg.train.lora_parameters, resolve=True
+    )
     linear_to_lora_layers(
         init_model,
         cfg.train.lora_layers,

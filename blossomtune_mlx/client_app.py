@@ -114,7 +114,7 @@ class MLXClient(NumPyClient):
 
         # Convert OmegaConf DictConfig to a standard Python dict for the function
         lora_parameters_dict = OmegaConf.to_container(
-            self.train_cfg.lora_config, resolve=True
+            self.train_cfg.lora_parameters, resolve=True
         )
         use_dora = train_cfg.fine_tune_type == "dora"
         linear_to_lora_layers(
