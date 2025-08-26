@@ -65,7 +65,7 @@ You can run BlossomTuneMLX in two primary modes: a simple simulation on a single
 
 ### Scenario 1: Running a Simulation on a Single Machine
 
-This is the quickest way to test the entire federated learning pipeline. It starts a server and simulates multiple clients on your local machine. However, due to the limited amount of memory available for the training, this works only with Small LMs (135M, 270M).
+This is the quickest way to test the entire federated learning pipeline. It starts a server and simulates multiple clients on your local machine. However, due to the limited amount of memory available for the simulation, this works only with Small LMs (135M).
 
 #### Start the Simulation
     
@@ -82,7 +82,7 @@ You can override any configuration parameter from the pyproject.toml file direct
 For example, to change the model and the number of LoRA layers:
 
 ```
- uv run flwr run . local-simulation --run-config="model.name='mlx-community/gemma-3-270m-it-4bit' train.lora_layers=8 num_server_rounds=10"
+ uv run flwr run . local-simulation --run-config="train.lora_layers=8 num_server_rounds=10"
  ```
 
 The fine-tuned global model adapters will be saved in the `./results/` directory.
@@ -139,7 +139,7 @@ Finally, from the server machine, you can start the actual training run.
 The following command tells the server to orchestrate the training across all connected clients:
 
 ```
-uv run flwr run . local-deployment --run-config="num_server_rounds=25"
+uv run flwr run . local-deployment --run-config="num_server_rounds=25 model.name='lmstudio-community/gemma-3-270m-it-MLX-4bit'"
 ```
 
 The server will now coordinate the rounds of training. Each client will load its data partition, train locally, and send its updated adapter back to the server for aggregation.

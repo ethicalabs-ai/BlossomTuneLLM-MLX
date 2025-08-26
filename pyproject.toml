@@ -71,7 +71,7 @@ train.learning_rate_min = 1e-6
 train.seq_length = 512
 train.lora_layers = 4 # Number of layers to apply LoRA to
 train.lora_config = {rank=4, alpha=8, dropout=0.2, scale=10.0}
-train.fine_tune_type = "dora"
+train.fine_tune_type = "lora"
 
 # These arguments map to mlx_lm.tuner.TrainingArgs
 train.training_arguments.per_device_train_batch_size = 1
