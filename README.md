@@ -1,17 +1,17 @@
-# BlossomTuneMLX-LM: Federated Fine-Tuning of LLMs on Apple Silicon
+# BlossomTuneLLM-MLX: Federated Fine-Tuning of LLMs on Apple Silicon
 
 
 ## Empowering Decentralized & Efficient LLM Customization on Mac
 
-BlossomTuneMLX-LM is an open-source project designed to enable Federated Supervised Fine-Tuning (SFT) of Small Language Models (SLMs), specifically optimized for the Apple Silicon (M1/M2/M3/M4) architecture.
+BlossomTuneLLM-MLX is an open-source project designed to enable Federated Supervised Fine-Tuning (SFT) of Small Language Models (SLMs), specifically optimized for the Apple Silicon (M1/M2/M3/M4) architecture.
 
 This project adapts the core principles of the original BlossomTuneLLM, replacing the PyTorch and NVIDIA-based backend with Apple's native MLX framework and the powerful mlx-lm library.
 
 The result is a lightweight, efficient, and Docker-free solution for federated learning on macOS devices.
 
-## Why BlossomTune-MLX-LM:
+## Why BlossomTuneLLM-MLX:
 
-In an era where large language models demand immense computational resources, BlossomTune-MLX-LM offers a powerful alternative for:
+In an era where large language models demand immense computational resources, BlossomTuneLLM-MLX offers a powerful alternative for:
 
 - **Decentralization & Privacy-First AI**: Train LLMs collaboratively across multiple Macs without centralizing sensitive data.
 
@@ -31,7 +31,7 @@ In an era where large language models demand immense computational resources, Bl
 
 ## Getting Started
 
-BlossomTuneMLX-LM is designed to run natively on macOS without requiring Docker or other containerization tools.
+BlossomTuneLLM-MLX is designed to run natively on macOS without requiring Docker or other containerization tools.
 
 ### Prerequisites
 
@@ -60,7 +60,7 @@ pip install -e .
 
 ## Running Federated Training
 
-You can run BlossomTuneMLX in two primary modes: a simple simulation on a single machine, or a true federated setup across multiple machines on your local network.
+You can run BlossomTuneLLM-MLX in two primary modes: a simple simulation on a single machine, or a true federated setup across multiple machines on your local network.
 
 
 ### Scenario 1: Running a Simulation on a Single Machine
@@ -152,4 +152,4 @@ We welcome contributions from the community! Feel free to open issues, submit pu
 
 ## License
 
-BlossomTuneMLX is released under the Apache-2.0 License.
+BlossomTuneLLM-MLX is released under the Apache-2.0 License.
