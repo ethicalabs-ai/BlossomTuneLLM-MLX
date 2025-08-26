@@ -82,8 +82,8 @@ You can override any configuration parameter from the pyproject.toml file direct
 For example, to change the model and the number of LoRA layers:
 
 ```
-uv run flwr run . local-simulation --run-config="model.name='mlx-community/gemma-3-270m-it-4bit'" train.lora_layers=8 "num_server_rounds=50"
-```
+ uv run flwr run . local-simulation --run-config="model.name='mlx-community/gemma-3-270m-it-4bit' train.lora_layers=8 num_server_rounds=10"
+ ```
 
 The fine-tuned global model adapters will be saved in the `./results/` directory.
 
