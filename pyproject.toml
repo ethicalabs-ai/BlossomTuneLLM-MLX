@@ -63,6 +63,7 @@ clientapp = "blossomtune_mlx.client_app:app"
 [tool.flwr.app.config]
 # --- Model Configuration ---
 model.name = "mlx-community/SmolLM-135M-Instruct-4bit"
+model.adapter_path = "./results/mlx-community-smollm-135m-instruct-4bit/server/adapter_10"
 
 # --- Training Configuration ---
 train.save_every_round = 5

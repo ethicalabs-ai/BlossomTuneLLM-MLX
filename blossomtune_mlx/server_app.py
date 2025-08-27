@@ -102,6 +102,7 @@ def server_fn(context: Context) -> ServerAppComponents:
     # Create a unique output directory for this run
     cfg = get_run_config(context)
     model_path_or_name = context.run_config["model.name"]
+    adapter_path = context.run_config.get("model.adapter_path", None)
     model_slug = slugify(model_path_or_name)
     save_path = os.path.join(
         context.run_config["save_path"],
@@ -111,19 +112,20 @@ def server_fn(context: Context) -> ServerAppComponents:
 
     # 1. Load the base model architecture.
     # We only need the structure, so no need for full weights if memory is a concern.
-    init_model, _ = load(model_path_or_name)
+    init_model, _ = load(model_path_or_name, adapter_path=adapter_path)
 
     # 2. Configure the model for LoRA to create the adapter layers.
     init_model.freeze()
-    lora_parameters_dict = OmegaConf.to_container(
-        cfg.train.lora_parameters, resolve=True
-    )
-    linear_to_lora_layers(
-        init_model,
-        cfg.train.lora_layers,
-        lora_parameters_dict,
-        use_dora=(cfg.train.fine_tune_type == "dora"),
-    )
+    if not adapter_path:
+        lora_parameters_dict = OmegaConf.to_container(
+            cfg.train.lora_parameters, resolve=True
+        )
+        linear_to_lora_layers(
+            init_model,
+            cfg.train.lora_layers,
+            lora_parameters_dict,
+            use_dora=(cfg.train.fine_tune_type == "dora"),
+        )
     init_model_parameters = get_parameters(init_model)
     init_model_parameters = ndarrays_to_parameters(init_model_parameters)
 
