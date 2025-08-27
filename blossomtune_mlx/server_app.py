@@ -116,15 +116,18 @@ def server_fn(context: Context) -> ServerAppComponents:
 
     # 2. Configure the model for LoRA to create the adapter layers.
     init_model.freeze()
-    if not adapter_path:
-        lora_parameters_dict = OmegaConf.to_container(
-            cfg.train.lora_parameters, resolve=True
-        )
-        linear_to_lora_layers(
-            init_model,
-            cfg.train.lora_layers,
-            lora_parameters_dict,
-            use_dora=(cfg.train.fine_tune_type == "dora"),
+    lora_parameters_dict = OmegaConf.to_container(
+        cfg.train.lora_parameters, resolve=True
+    )
+    linear_to_lora_layers(
+        init_model,
+        cfg.train.lora_layers,
+        lora_parameters_dict,
+        use_dora=(cfg.train.fine_tune_type == "dora"),
+    )
+    if adapter_path:
+        init_model.load_weights(
+            os.path.join(adapter_path, "adapters.safetensors"), strict=False
         )
     init_model_parameters = get_parameters(init_model)
     init_model_parameters = ndarrays_to_parameters(init_model_parameters)
