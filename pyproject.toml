@@ -81,7 +81,7 @@ train.training_arguments.gradient_checkpointing = true
 # --- Strategy Configuration ---
 strategy.min_fit_clients = 1
 strategy.min_available_clients = 1
-strategy.fraction_fit = 0.2
+strategy.fraction_fit = 1.0
 strategy.fraction_evaluate = 0.0 # Evaluation is not implemented yet
 
 # --- Federated Run Configuration ---
@@ -100,12 +100,13 @@ num-server-rounds = 10
 default = "local-simulation"
 
 [tool.flwr.federations.local-deployment]
+options.num-supernodes = 10
 address = "0.0.0.0:9093"
 insecure = true
 
 [tool.flwr.federations.local-simulation]
 options.num-supernodes = 10
-options.backend.client-resources.num-cpus = 4
+options.backend.client-resources.num-cpus = 2
 options.backend.client-resources.num-gpus = 0 # MLX uses the Neural Engine / GPU via unified memory
 
 
