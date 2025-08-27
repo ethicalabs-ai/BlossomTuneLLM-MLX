@@ -1,9 +1,7 @@
 """blossomtunellm-mlx: A Flower client app for federated learning with MLX."""
 
 import os
-import json
-import math
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple, Union, Iterable
 from pathlib import Path
 from slugify import slugify
 
@@ -16,12 +14,17 @@ from mlx_lm import load
 from mlx_lm.tuner import train
 from mlx_lm.tuner.utils import linear_to_lora_layers
 from mlx_lm.tuner.trainer import TrainingCallback
-from mlx_lm.tuner.datasets import CacheDataset, create_dataset
-from transformers import PreTrainedTokenizer
+from transformers import AutoTokenizer
 
 from blossomtune_mlx.config import get_run_config
 from blossomtune_mlx.dataset import load_data
-from blossomtune_mlx.models import get_parameters, set_parameters, get_training_args
+
+from blossomtune_mlx.models import (
+    get_parameters,
+    set_parameters,
+    get_training_args,
+    cosine_annealing,
+)
 
 
 # Suppress warnings
@@ -51,33 +54,6 @@ class LossCallback(TrainingCallback):
         return sum(self.train_losses) / len(self.train_losses)
 
 
-def cosine_annealing(
-    current_round: int,
-    total_round: int,
-    lrate_max: float = 0.001,
-    lrate_min: float = 0.0,
-) -> float:
-    """Implement cosine annealing learning rate schedule."""
-    cos_inner = math.pi * current_round / total_round
-    return lrate_min + 0.5 * (lrate_max - lrate_min) * (1 + math.cos(cos_inner))
-
-
-def load_local_dataset(
-    data_path: Path,
-    tokenizer: PreTrainedTokenizer,
-    config: Dict,
-    split: str = "train",
-):
-    def load_subset(path):
-        if not path.exists():
-            return []
-        with open(path, "r") as fid:
-            data = [json.loads(line) for line in fid]
-        return create_dataset(data, tokenizer, config)
-
-    return load_subset(data_path / f"{split}.jsonl")
-
-
 class MLXClient(NumPyClient):
     """
     A Flower client for federated fine-tuning using the mlx-lm library directly.
@@ -90,6 +66,8 @@ class MLXClient(NumPyClient):
         train_cfg: DictConfig,
         data_path: str,
         results_path: str,
+        client_trainset: Iterable,
+        client_valset: Iterable,
         num_examples: int,
         num_rounds: int,
     ):
@@ -99,6 +77,8 @@ class MLXClient(NumPyClient):
         self.results_path = (
             results_path  # Path to the directory where to store model adapters.
         )
+        self.client_trainset = client_trainset
+        self.client_valset = client_valset
         self.num_examples = num_examples
         self.num_rounds = num_rounds
 
@@ -159,22 +139,9 @@ class MLXClient(NumPyClient):
         training_args = get_training_args(self.train_cfg, str(adapter_file))
 
         # Load the dataset using the tuner's utility
-        dataset_config = {
-            "mask_prompt": False,
-            "prompt_feature": "prompt",
-            "text_feature": "text",
-            "completion_feature": "completion",
-            "chat_feature": "messages",
-        }
-        train_dataset = load_local_dataset(
-            Path(self.data_path), self.tokenizer, dataset_config, split="train"
-        )
-        val_dataset = load_local_dataset(
-            Path(self.data_path), self.tokenizer, dataset_config, split="validation"
-        )
         # TODO: add dataset config to pyproject.toml
-        train_dataset = CacheDataset(train_dataset)
-        val_dataset = CacheDataset(val_dataset)
+        train_dataset = self.client_trainset
+        val_dataset = self.client_valset
         print(f"Client: Starting training for {training_args.iters} iterations...")
 
         # Initialize our custom callback to capture the loss
@@ -218,7 +185,7 @@ def client_fn(context: Context) -> NumPyClient:
 
     # Load the client's data partition. The `load_data` function now also
     # handles saving the data to a .jsonl file and returns the path.
-    client_trainset, _, saved_data_path = load_data(
+    client_trainset, client_valset, saved_data_path = load_data(
         partition_id=partition_id,
         num_partitions=num_partitions,
         dataset_name=cfg.dataset.name,
@@ -227,6 +194,7 @@ def client_fn(context: Context) -> NumPyClient:
         train_split="train",
         split_ratio=80,
         data_path_base=data_path_base,
+        tokenizer=AutoTokenizer.from_pretrained(cfg.model.name),
     )
 
     # Instantiate the client with the path to the saved data
@@ -236,6 +204,8 @@ def client_fn(context: Context) -> NumPyClient:
         train_cfg=cfg.train,
         data_path=saved_data_path,
         results_path=results_path_base,
+        client_trainset=client_trainset,
+        client_valset=client_valset,
         num_examples=len(client_trainset),
         num_rounds=num_rounds,
     ).to_client()

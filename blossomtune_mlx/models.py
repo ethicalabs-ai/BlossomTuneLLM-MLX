@@ -1,3 +1,4 @@
+import math
 import mlx.core as mx
 import numpy as np
 
@@ -7,6 +8,17 @@ from flwr.common.typing import NDArrays
 
 from mlx.utils import tree_flatten, tree_unflatten
 from mlx_lm.tuner import TrainingArgs
+
+
+def cosine_annealing(
+    current_round: int,
+    total_round: int,
+    lrate_max: float = 0.001,
+    lrate_min: float = 0.0,
+) -> float:
+    """Implement cosine annealing learning rate schedule."""
+    cos_inner = math.pi * current_round / total_round
+    return lrate_min + 0.5 * (lrate_max - lrate_min) * (1 + math.cos(cos_inner))
 
 
 def get_training_args(train_cfg: DictConfig, adapter_file: Path) -> TrainingArgs:

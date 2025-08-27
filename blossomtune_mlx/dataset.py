@@ -1,17 +1,36 @@
 """blossomtunellm-mlx: A Flower client app for federated learning with MLX."""
 
 import re
+import json
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
 
 from datasets import Dataset, DatasetDict
+from transformers import PreTrainedTokenizer
 from flwr_datasets import FederatedDataset
 from flwr_datasets.partitioner import IidPartitioner
 from jinja2 import Template, StrictUndefined
 from jinja2.exceptions import TemplateError, UndefinedError
+from mlx_lm.tuner.datasets import CacheDataset, create_dataset
 
 
 FDS = {}  # Cache FederatedDataset
+
+
+def load_local_dataset(
+    data_path: Path,
+    tokenizer: PreTrainedTokenizer,
+    config: Dict,
+    split: str = "train",
+):
+    def load_subset(path):
+        if not path.exists():
+            return []
+        with open(path, "r") as fid:
+            data = [json.loads(line) for line in fid]
+        return create_dataset(data, tokenizer, config)
+
+    return load_subset(data_path / f"{split}.jsonl")
 
 
 def render_template(template: str, context: dict) -> str:
@@ -94,6 +113,7 @@ def load_data(
     prompt_template: str,
     completion_template: str,
     data_path_base: str,
+    tokenizer: PreTrainedTokenizer,
     train_split: str = "train",
     validation_split: Optional[str] = None,
     split_ratio: Optional[int] = None,
@@ -108,12 +128,43 @@ def load_data(
     """
     global FDS
 
+    # TODO: allow customization
+    dataset_config = {
+        "mask_prompt": False,
+        "prompt_feature": "prompt",
+        "text_feature": "text",
+        "completion_feature": "completion",
+        "chat_feature": "messages",
+    }
+
     # --- Setup Paths ---
     dataset_slug = re.sub(r"[^a-zA-Z0-9_-]", "", dataset_name.replace("/", "_"))
     save_dir = (
         Path(data_path_base) / "datasets" / dataset_slug / f"partition_{partition_id}"
     )
+    valid_save_path = save_dir / "validation.jsonl"
+    train_save_path = save_dir / "train.jsonl"
     save_dir.mkdir(parents=True, exist_ok=True)
+
+    client_trainset = None
+    client_validset = None
+    if train_save_path.exists():
+        client_trainset = load_local_dataset(
+            save_dir, tokenizer, dataset_config, split="train"
+        )
+        print(f"Client {partition_id}: Loaded training data from {train_save_path}")
+        if valid_save_path.exists():
+            client_validset = load_local_dataset(
+                save_dir, tokenizer, dataset_config, split="validation"
+            )
+            print(
+                f"Client {partition_id}: Loaded validation data from {valid_save_path}"
+            )
+        return (
+            CacheDataset(client_trainset),
+            CacheDataset(client_validset),
+            str(save_dir),
+        )
 
     # --- Load and Process Train Data ---
     if FDS.get(train_split) is None:
@@ -128,7 +179,6 @@ def load_data(
     )
 
     # --- Handle Validation Data ---
-    client_validset = None
     if validation_split:
         # Scenario 1: A specific validation split is provided
         print(
@@ -160,15 +210,19 @@ def load_data(
 
     # --- Save Datasets to Disk ---
     # Save the final training set
-    train_save_path = save_dir / "train.jsonl"
     client_trainset.to_json(train_save_path, orient="records")
+    client_trainset = load_local_dataset(
+        save_dir, tokenizer, dataset_config, split="train"
+    )
     print(f"Client {partition_id}: Saved training data to {train_save_path}")
 
     # Save the validation set if it exists
     if client_validset:
-        valid_save_path = save_dir / "validation.jsonl"
         client_validset.to_json(valid_save_path, orient="records")
+        client_validset = load_local_dataset(
+            save_dir, tokenizer, dataset_config, split="validation"
+        )
         print(f"Client {partition_id}: Saved validation data to {valid_save_path}")
 
     # Return the train set, validation set, and the path to their directory
-    return client_trainset, client_validset, str(save_dir)
+    return CacheDataset(client_trainset), CacheDataset(client_validset), str(save_dir)
