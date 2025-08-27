@@ -112,7 +112,7 @@ def server_fn(context: Context) -> ServerAppComponents:
 
     # 1. Load the base model architecture.
     # We only need the structure, so no need for full weights if memory is a concern.
-    init_model, _ = load(model_path_or_name, adapter_path=adapter_path)
+    init_model, _ = load(model_path_or_name)
 
     # 2. Configure the model for LoRA to create the adapter layers.
     init_model.freeze()
