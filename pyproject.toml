@@ -63,7 +63,7 @@ clientapp = "blossomtune_mlx.client_app:app"
 [tool.flwr.app.config]
 # --- Model Configuration ---
 model.name = "mlx-community/SmolLM-135M-Instruct-4bit"
-model.adapter_path = nan
+model.adapter_path = ""
 
 # --- Training Configuration ---
 train.save_every_round = 5
@@ -91,9 +91,9 @@ data_path = "./data"  # Base directory for client datasets
 save_path = "./results"  # Server-side directory for saving global models
 
 # --- Dataset Configuration ---
-dataset.name = "flwrlabs/alpaca-gpt4"
-dataset.prompt_template = "{% if instruction %}{{ instruction }} {% endif %}{{ input }}"
-dataset.completion_template = "{{output}}"
+dataset.name = "ethicalabs/kurtis-v2-sft-mix-tiny"
+dataset.prompt_template = "{{ prompt }}"
+dataset.completion_template = "{% if reasoning %}<think>{{ reasoning }}</think>{% endif %}\n{{ completion }}"
 
 num-server-rounds = 10
 
@@ -106,7 +106,7 @@ address = "0.0.0.0:9093"
 insecure = true
 
 [tool.flwr.federations.local-simulation]
-options.num-supernodes = 10
+options.num-supernodes = 2
 options.backend.client-resources.num-cpus = 2
 options.backend.client-resources.num-gpus = 0 # MLX uses the Neural Engine / GPU via unified memory
 
