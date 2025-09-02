@@ -62,7 +62,7 @@ clientapp = "blossomtune_mlx.client_app:app"
 
 [tool.flwr.app.config]
 # --- Model Configuration ---
-model.name = "mlx-community/SmolLM-135M-Instruct-4bit"
+model.name = "HuggingFaceTB/SmolLM2-135M-Instruct-Q8-mlx"
 model.adapter_path = ""
 
 # --- Training Configuration ---
@@ -70,9 +70,9 @@ train.save_every_round = 5
 train.learning_rate_max = 5e-5
 train.learning_rate_min = 1e-6
 train.seq_length = 512
-train.lora_layers = 12 # Number of layers to apply LoRA to
-train.lora_parameters = {rank=8, alpha=16, dropout=0.2, scale=10.0}
-train.fine_tune_type = "lora"
+train.lora_layers = 10 # Number of layers to apply LoRA to
+train.lora_parameters = {rank=8, alpha=16, dropout=0.1, scale=100.0}
+train.fine_tune_type = "dora"
 
 # These arguments map to mlx_lm.tuner.TrainingArgs
 train.training_arguments.per_device_train_batch_size = 1
@@ -92,7 +92,7 @@ save_path = "./results"  # Server-side directory for saving global models
 
 # --- Dataset Configuration ---
 dataset.name = "flwrlabs/alpaca-gpt4"
-dataset.prompt_template = "{% if instruction %}{{ instruction }} {% endif %}{{ input }}"
+dataset.prompt_template = "{{ instruction }}{% if input %}\n\n{{ input }}{% endif %}"
 dataset.completion_template = "{{output}}"
 
 num-server-rounds = 10

@@ -1,6 +1,7 @@
 """blossomtunellm-mlx: A Flower client app for federated learning with MLX."""
 
 import os
+from datetime import datetime
 from typing import Dict, Tuple, Union, Iterable
 from pathlib import Path
 from slugify import slugify
@@ -37,6 +38,7 @@ class LossCallback(TrainingCallback):
     def __init__(self):
         super().__init__()
         self.train_losses = []
+        self.val_losses = []
 
     def on_train_loss_report(
         self,
@@ -47,11 +49,25 @@ class LossCallback(TrainingCallback):
         if loss is not None:
             self.train_losses.append(loss)
 
-    def get_average_loss(self) -> float:
+    def on_val_loss_report(
+        self,
+        info: Dict[str, Union[float, int]],
+    ) -> None:
+        loss = info.get("val_loss")
+        if loss is not None:
+            self.val_losses.append(loss)
+
+    def get_average_train_loss(self) -> float:
         """Calculate the average loss for the training run."""
         if not self.train_losses:
             return -1.0
         return sum(self.train_losses) / len(self.train_losses)
+
+    def get_average_val_loss(self) -> float:
+        """Calculate the average loss for the training run."""
+        if not self.val_losses:
+            return -1.0
+        return sum(self.val_losses) / len(self.val_losses)
 
 
 class MLXClient(NumPyClient):
@@ -123,12 +139,14 @@ class MLXClient(NumPyClient):
             self.train_cfg.learning_rate_max,
             self.train_cfg.learning_rate_min,
         )
-
+        current_time = datetime.now()
+        current_time_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")
         # Adapter output. Should we set this to a temporary file? Or saving it, optionally, for client adapter analysis?
         adapter_file = (
             Path(self.results_path)
             / self.model_slug
             / "clients"
+            / current_time_str
             / f"partition_{self.partition_id}"
             / "adapters.safetensors"
         )
@@ -161,9 +179,11 @@ class MLXClient(NumPyClient):
 
         # Return the updated local parameters and the captured metrics
         new_parameters = get_parameters(self.model)
-        avg_loss = loss_callback.get_average_loss()
-        metrics = {"train_loss": avg_loss}
-        print(f"Client: Average training loss: {avg_loss:.4f}")
+        avg_train_loss = loss_callback.get_average_train_loss()
+        avg_val_loss = loss_callback.get_average_val_loss()
+        metrics = {"train_loss": avg_train_loss, "val_loss": avg_val_loss}
+        print(f"Client: Average training loss: {avg_train_loss:.4f}")
+        print(f"Client: Average validation loss: {avg_val_loss:.4f}")
         os.unlink(adapter_file)
         return (
             new_parameters,
