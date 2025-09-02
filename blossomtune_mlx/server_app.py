@@ -91,10 +91,14 @@ def fit_weighted_average(metrics):
     """Aggregate (federated) evaluation metrics."""
     # Multiply accuracy of each client by number of examples used
     losses = [num_examples * m["train_loss"] for num_examples, m in metrics]
+    val_losses = [num_examples * m["val_loss"] for num_examples, m in metrics]
     examples = [num_examples for num_examples, _ in metrics]
 
     # Aggregate and return custom metric (weighted average)
-    return {"train_loss": sum(losses) / sum(examples)}
+    return {
+        "train_loss": sum(losses) / sum(examples),
+        "val_loss": sum(val_losses) / sum(examples),
+    }
 
 
 def server_fn(context: Context) -> ServerAppComponents:
