@@ -1,6 +1,7 @@
 """blossomtunellm-mlx: A Flower client app for federated learning with MLX."""
 
 import os
+from datetime import datetime
 from pathlib import Path
 from slugify import slugify
 from typing import Dict, Tuple
@@ -108,10 +109,13 @@ def server_fn(context: Context) -> ServerAppComponents:
     model_path_or_name = context.run_config["model.name"]
     adapter_path = context.run_config.get("model.adapter_path", None)
     model_slug = slugify(model_path_or_name)
+    current_time = datetime.now()
+    current_time_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")
     save_path = os.path.join(
         context.run_config["save_path"],
         model_slug,
         "server",
+        current_time_str,
     )
 
     # 1. Load the base model architecture.

@@ -1,6 +1,7 @@
 """blossomtunellm-mlx: A Flower client app for federated learning with MLX."""
 
 import os
+from datetime import datetime
 from typing import Dict, Tuple, Union, Iterable
 from pathlib import Path
 from slugify import slugify
@@ -138,12 +139,14 @@ class MLXClient(NumPyClient):
             self.train_cfg.learning_rate_max,
             self.train_cfg.learning_rate_min,
         )
-
+        current_time = datetime.now()
+        current_time_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")
         # Adapter output. Should we set this to a temporary file? Or saving it, optionally, for client adapter analysis?
         adapter_file = (
             Path(self.results_path)
             / self.model_slug
             / "clients"
+            / current_time_str
             / f"partition_{self.partition_id}"
             / "adapters.safetensors"
         )
